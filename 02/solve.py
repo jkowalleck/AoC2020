@@ -3,6 +3,13 @@ from os import path
 from re import compile as re_compile
 from typing import Callable, List
 
+INPUT_FILE = path.join(path.dirname(__file__), 'input')
+
+
+def get_input() -> List[str]:
+    with open(INPUT_FILE) as fh:
+        return fh.readlines()
+
 
 class Entry:
     _LINE_FORMAT = re_compile(r'^(\d+)\-(\d+) (\w)\: (\w+)$')
@@ -17,17 +24,12 @@ class Entry:
         self.word = str(parts[4])
 
 
-def get_input() -> List[Entry]:
-    with open(path.join(path.dirname(__file__), 'input')) as input_fh:
-        return list(map(Entry, input_fh.readlines()))
-
-
 _SolveFilter = Callable[[Entry], bool]
 
 
 def solve(filter_: _SolveFilter) -> int:
-    input = get_input()
-    valids = list(filter(filter_, input))
+    input_ = map(Entry, get_input())
+    valids = list(filter(filter_, input_))
     return len(valids)
 
 

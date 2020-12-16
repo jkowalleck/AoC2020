@@ -1,24 +1,26 @@
 from functools import reduce
 from itertools import permutations
 from os import path
-from typing import Optional, Set, Tuple
+from typing import List, Optional, Tuple
+
+INPUT_FILE = path.join(path.dirname(__file__), 'input')
 
 
-def get_input() -> Set[int]:
-    with open(path.join(path.dirname(__file__), 'input')) as input_fh:
-        return set(map(int, input_fh.readlines()))
+def get_input() -> List[str]:
+    with open(INPUT_FILE) as fh:
+        return fh.readlines()
 
 
 def find_addends(sum_: int, addends_cnt: int) -> Optional[Tuple[int, ...]]:
-    input = get_input()
-    for addends in permutations(input, addends_cnt):
+    input_ = set(map(int, get_input()))
+    for addends in permutations(input_, addends_cnt):
         if sum(addends) == sum_:
             return addends
     return None
 
 
-def solve(sum: int, addends_cnt: int) -> Optional[int]:
-    addends = find_addends(sum, addends_cnt)
+def solve(sum_: int, addends_cnt: int) -> Optional[int]:
+    addends = find_addends(sum_, addends_cnt)
     if addends is not None:
         return reduce(lambda a, b: a * b, addends)
     return None
