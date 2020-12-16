@@ -8,7 +8,7 @@ INPUT_FILE = path.join(path.dirname(__file__), 'input')
 
 def get_input() -> List[str]:
     with open(INPUT_FILE) as fh:
-        return fh.readlines()
+        return [line.rstrip('\n') for line in fh.readlines()]
 
 
 class Entry:

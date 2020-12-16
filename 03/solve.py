@@ -7,7 +7,7 @@ INPUT_FILE = path.join(path.dirname(__file__), 'input')
 
 def get_input() -> List[str]:
     with open(INPUT_FILE) as fh:
-        return fh.readlines()
+        return [line.rstrip('\n') for line in fh.readlines()]
 
 
 class Tile:
@@ -15,7 +15,7 @@ class Tile:
     @classmethod
     def from_raw_lines(cls, lines: List[str]) -> "Tile":
         trees = [
-            [char == '#' for char in line.strip()]
+            [char == '#' for char in line]
             for line in lines
         ]
         return cls(trees)
