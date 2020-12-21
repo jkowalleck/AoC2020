@@ -1,7 +1,7 @@
 from copy import deepcopy
 from enum import Enum, unique
 from os import path
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 INPUT_FILE = path.join(path.dirname(__file__), 'input')
 
@@ -20,33 +20,53 @@ class SeatState(Enum):
 
 SeatNeighbors = Tuple[SeatState, SeatState, SeatState, SeatState, SeatState, SeatState, SeatState, SeatState]
 
+_Row = int
+_Col = int
+
+NeighborFunction = Callable[["SeatArea", _Row, _Col, Tuple[_Row, _Col]], SeatState]
+
 
 class SeatArea(List[List[SeatState]]):
 
-    def count_states(self, value: SeatState) -> int:
+    def count_state(self, value: SeatState) -> int:
         return sum(row.count(value) for row in self)
 
-    def get(self, row, col) -> SeatState:
-        if 0 <= row < len(self):
-            _row = self[row]
-            if 0 <= col < len(_row):
-                return _row[col]
+    def neighbor_adjacent(self, row: _Row, col: _Col, vector: Tuple[_Row, _Col]) -> SeatState:
+        neighbor_row = row + vector[0]
+        neighbor_col = col + vector[1]
+        rows = len(self)
+        cols = len(self[0])
+        if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols:
+            return self[neighbor_row][neighbor_col]
         return SeatState.Floor
 
-    def neighbors(self, row, col) -> SeatNeighbors:
+    def neighbor_sight(self, row: _Row, col: _Col, vector: Tuple[_Row, _Col]) -> SeatState:
+        neighbor_row = row + vector[0]
+        neighbor_col = col + vector[1]
+        rows = len(self)
+        cols = len(self[0])
+        while 0 <= neighbor_row < rows and 0 <= neighbor_col < cols:
+            seat = self[neighbor_row][neighbor_col]
+            if seat != SeatState.Floor:
+                return seat
+            neighbor_row += vector[0]
+            neighbor_col += vector[1]
+        return SeatState.Floor
+
+    def neighbors(self, row: _Row, col: _Col, neighbor: NeighborFunction) -> SeatNeighbors:
         return (
-            self.get(row - 1, col - 1),
-            self.get(row - 1, col),
-            self.get(row - 1, col + 1),
-            self.get(row, col - 1),
-            # self.get(row, col),
-            self.get(row, col + 1),
-            self.get(row + 1, col - 1),
-            self.get(row + 1, col),
-            self.get(row + 1, col + 1),
+            neighbor(self, row, col, (-1, -1)),
+            neighbor(self, row, col, (-1, +0)),
+            neighbor(self, row, col, (-1, +1)),
+            neighbor(self, row, col, (-0, -1)),
+            # neighbor(self, row, col, (+0, +0)), # own seat
+            neighbor(self, row, col, (+0, +1)),
+            neighbor(self, row, col, (+1, -1)),
+            neighbor(self, row, col, (+1, +0)),
+            neighbor(self, row, col, (+1, +1)),
         )
 
-    def step(self) -> "SeatArea":
+    def step(self, neighbor: NeighborFunction, tolerance: int) -> "SeatArea":
         rows = len(self)
         cols = len(self[0])
         new = deepcopy(self)
@@ -54,36 +74,28 @@ class SeatArea(List[List[SeatState]]):
             for col in range(cols):
                 if self[row][col] == SeatState.Floor:
                     continue
-                occupied_count = self.neighbors(row, col).count(SeatState.Occupied)
+                occupied_count = self.neighbors(row, col, neighbor).count(SeatState.Occupied)
                 if self[row][col] == SeatState.Empty:
                     if occupied_count == 0:
                         new[row][col] = SeatState.Occupied
                 else:
-                    if occupied_count >= 4:
+                    if occupied_count >= tolerance:
                         new[row][col] = SeatState.Empty
         return new
 
 
-def get_input_seats() -> SeatArea:
-    return SeatArea(
-        [SeatState(char) for char in line]
-        for line
-        in get_input()
-    )
-
-
-def solve() -> int:
-    seats = get_input_seats()
+def solve(neighbor: NeighborFunction, tolerance: int) -> int:
+    seats = SeatArea([SeatState(char) for char in line] for line in get_input())
     while True:
-        seats_next = seats.step()
+        seats_next = seats.step(neighbor, tolerance)
         if seats_next == seats:
             break
         seats = seats_next
-    return seats.count_states(SeatState.Occupied)
+    return seats.count_state(SeatState.Occupied)
 
 
 if __name__ == '__main__':
-    solution_part1 = solve()
+    solution_part1 = solve(SeatArea.neighbor_adjacent, 4)
     print(f'solution part 1: {solution_part1}')
-    # solution_part2 = solve()
-    # print(f'solution part 2: {solution_part2}')
+    solution_part2 = solve(SeatArea.neighbor_sight, 5)
+    print(f'solution part 2: {solution_part2}')
